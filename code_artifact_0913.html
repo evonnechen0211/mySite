@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>本地端個資匿名化工具 (PII Masking Tool)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS (xlsx) for reading/writing Excel & CSV -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <header class="bg-indigo-600 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center">
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold flex items-center gap-3">
+                    <i class="fa-solid fa-user-secret"></i> 本地端個資匿名化工具
+                </h1>
+                <p class="mt-1 text-indigo-100 text-sm sm:text-base">
+                    安全處理 Excel 與 CSV 檔案，自動識別敏感欄位並進行遮罩與泛化（100% 於瀏覽器本地執行，絕不上傳雲端）。
+                </p>
+            </div>
+            <div class="mt-4 sm:mt-0 flex gap-2">
+                <span class="bg-indigo-700 text-indigo-200 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5">
+                    <i class="fa-solid fa-shield-halved"></i> 隱私安全保障
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+        
+        <!-- 上傳檔案區域 -->
+        <div id="upload-section" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center transition hover:border-indigo-400">
+            <div class="max-w-lg mx-auto space-y-4">
+                <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto text-2xl shadow-inner">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-700">上傳您的資料檔案</h3>
+                    <p class="text-sm text-slate-500 mt-1">支援 .xlsx, .xls, .csv 格式（包含範例檔案測試）</p>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row justify-center gap-3 pt-2">
+                    <label class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-5 py-2.5 rounded-xl shadow transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-folder-open"></i> 選擇檔案
+                        <input type="file" id="file-input" accept=".xlsx, .xls, .csv" class="hidden">
+                    </label>
+                    <button id="load-sample-btn" class="bg-white hover:bg-slate-50 text-slate-700 font-medium px-5 py-2.5 rounded-xl border border-slate-300 shadow-sm transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles text-indigo-600"></i> 載入範例資料
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 處理與預覽控制面板 (初始隱藏) -->
+        <div id="workspace-section" class="hidden space-y-6">
+            
+            <!-- 檔案資訊與快捷操作列 -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-file-excel"></i>
+                    </div>
+                    <div>
+                        <h4 id="file-name-display" class="font-semibold text-slate-800">filename.xlsx</h4>
+                        <p id="file-meta-display" class="text-xs text-slate-500">共 0 列資料，0 個欄位</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 w-full md:w-auto justify-end">
+                    <button id="reset-btn" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-rotate-left"></i> 重新上傳
+                    </button>
+                    <button id="export-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-5 py-2 rounded-xl shadow transition flex items-center gap-2">
+                        <i class="fa-solid fa-download"></i> 匯出處理後檔案
+                    </button>
+                </div>
+            </div>
+
+            <!-- 欄位匿名化規則設定區 -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-lg">欄位匿名化與進階參數設定</h3>
+                        <p class="text-xs text-slate-500">系統已自動偵測敏感欄位，您可選擇匿名化策略並點擊「設定進階參數」微調遮罩細節。</p>
+                    </div>
+                    <button id="apply-mask-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-xl shadow transition flex items-center gap-2">
+                        <i class="fa-solid fa-play"></i> 套用遮罩並預覽
+                    </button>
+                </div>
+
+                <!-- 欄位設定清單 (動態生成) -->
+                <div id="columns-config-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+                    <!-- 動態插入設定卡片 -->
+                </div>
+            </div>
+
+            <!-- 資料預覽表格區 -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                    <h3 class="font-bold text-slate-800">匿名化結果預覽</h3>
+                    <span class="text-xs text-slate-500 bg-slate-200/60 px-2.5 py-1 rounded-full font-medium">僅顯示前 20 筆</span>
+                </div>
+                <div class="overflow-x-auto max-h-[500px]">
+                    <table id="preview-table" class="w-full text-left border-collapse">
+                        <thead id="preview-thead" class="bg-slate-100 text-slate-700 text-xs uppercase tracking-wider sticky top-0">
+                            <!-- 動態表頭 -->
+                        </thead>
+                        <tbody id="preview-tbody" class="divide-y divide-slate-100 text-sm text-slate-600">
+                            <!-- 動態資料列 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- 自訂訊息對話框 (取代 alert) -->
+    <div id="modal-container" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-4 animate-scale">
+            <div id="modal-icon" class="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl mx-auto">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <div class="text-center space-y-1">
+                <h4 id="modal-title" class="font-bold text-slate-800 text-lg">提示訊息</h4>
+                <p id="modal-desc" class="text-sm text-slate-500">訊息內容...</p>
+            </div>
+            <div class="pt-2">
+                <button id="modal-close-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-xl transition">確定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 進階參數設定互動視窗 (Modal) -->
+    <div id="advanced-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-5">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h4 id="advanced-modal-title" class="font-bold text-slate-800 text-base">進階參數設定 - 欄位</h4>
+                <button id="advanced-close-x" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <div class="space-y-4 text-sm">
+                <!-- 遮罩起點 -->
+                <div class="space-y-1.5">
+                    <label class="font-semibold text-slate-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-arrow-right-to-bracket text-indigo-600"></i> 從第幾位元開始遮罩 (Start Index)
+                    </label>
+                    <input type="number" id="adv-start" min="0" value="1" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <p class="text-[11px] text-slate-400">例如：設定為 2 表示保留第 1 個字元後開始遮罩。</p>
+                </div>
+
+                <!-- 遮罩長度 -->
+                <div class="space-y-1.5">
+                    <label class="font-semibold text-slate-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-ruler-horizontal text-indigo-600"></i> 連續遮罩長度 (Mask Length)
+                    </label>
+                    <input type="number" id="adv-length" min="1" value="4" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <p class="text-[11px] text-slate-400">遮罩字元替換的總長度（若留空或小於0則遮罩至結尾前指定保留數）。</p>
+                </div>
+
+                <!-- 保留結尾字元數 -->
+                <div class="space-y-1.5">
+                    <label class="font-semibold text-slate-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-shield text-indigo-600"></i> 結尾保留字元數 (Keep Tail)
+                    </label>
+                    <input type="number" id="adv-tail" min="0" value="1" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <p class="text-[11px] text-slate-400">結尾需要原樣保留不被遮罩的字元個數（如姓名保留最後一個字）。</p>
+                </div>
+
+                <!-- 遮罩填充符號 -->
+                <div class="space-y-1.5">
+                    <label class="font-semibold text-slate-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-asterisk text-indigo-600"></i> 遮罩替代符號 (Mask Character)
+                    </label>
+                    <select id="adv-char" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="*">星號 (*)</option>
+                        <option value="○">圓圈 (○)</option>
+                        <option value="X">大寫X (X)</option>
+                        <option value="#">井號 (#)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <button id="advanced-cancel-btn" class="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium py-2.5 rounded-xl transition">取消</button>
+                <button id="advanced-save-btn" class="w-1/2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-xl transition">儲存設定</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-auto py-6 text-center text-xs text-slate-400">
+        <p>本地端個資匿名化工具 &copy; 2026 | 資料所有權歸您所有，所有運算皆在瀏覽器內完成。</p>
+    </footer>
+
+    <script>
+        // 全域狀態變數
+        let rawData = [];          // 原始資料 (陣列物件)
+        let processedData = [];    // 處理後資料
+        let columns = [];          // 欄位名稱陣列
+        let columnConfigs = {};    // 欄位設定 { 欄位名稱: { rule: '...', adv: { start, length, tail, char } } }
+        let currentFileName = "processed_data.xlsx";
+        let activeAdvancedCol = null; // 目前正在設定進階參數的欄位
+
+        // DOM 元素
+        const fileInput = document.getElementById('file-input');
+        const loadSampleBtn = document.getElementById('load-sample-btn');
+        const uploadSection = document.getElementById('upload-section');
+        const workspaceSection = document.getElementById('workspace-section');
+        const fileNameDisplay = document.getElementById('file-name-display');
+        const fileMetaDisplay = document.getElementById('file-meta-display');
+        const columnsConfigContainer = document.getElementById('columns-config-container');
+        const applyMaskBtn = document.getElementById('apply-mask-btn');
+        const exportBtn = document.getElementById('export-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        
+        // Modal 元素
+        const modalContainer = document.getElementById('modal-container');
+        const modalTitle = document.getElementById('modal-title');
+        const modalDesc = document.getElementById('modal-desc');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        // 進階 Modal 元素
+        const advancedModal = document.getElementById('advanced-modal');
+        const advancedModalTitle = document.getElementById('advanced-modal-title');
+        const advStart = document.getElementById('adv-start');
+        const advLength = document.getElementById('adv-length');
+        const advTail = document.getElementById('adv-tail');
+        const advChar = document.getElementById('adv-char');
+        const advancedCloseX = document.getElementById('advanced-close-x');
+        const advancedCancelBtn = document.getElementById('advanced-cancel-btn');
+        const advancedSaveBtn = document.getElementById('advanced-save-btn');
+
+        function showModal(title, desc) {
+            modalTitle.innerText = title;
+            modalDesc.innerText = desc;
+            modalContainer.classList.remove('hidden');
+        }
+        modalCloseBtn.addEventListener('click', () => modalContainer.classList.add('hidden'));
+
+        // 載入範例資料 (確保欄位名稱乾淨直接)
+        loadSampleBtn.addEventListener('click', () => {
+            currentFileName = "完整個資客戶樣本.xlsx";
+            rawData = [
+                { "姓名": "王小明", "電話": "0912-345678", "身分證字號": "A123456789", "mail": "ming123@example.com", "通訊地址": "台北市大安區忠孝東路四段100號", "出生年月日": "1990/05/12", "性別": "男", "消費金額": 45000 },
+                { "姓名": "李美麗", "電話": "0923-456789", "身分證字號": "B223456788", "mail": "beauty_li@gmail.com", "通訊地址": "高雄市前金區中正四路200號", "出生年月日": "1985/11/23", "性別": "女", "消費金額": 52000 },
+                { "姓名": "張志豪", "電話": "0934-567890", "身分證字號": "C134567897", "mail": "hao99@yahoo.com.tw", "通訊地址": "台中市西區台灣大道二段300號", "出生年月日": "1992/03/15", "性別": "男", "消費金額": 38000 },
+                { "姓名": "陳雅婷", "電話": "0945-678901", "身分證字號": "D245678906", "mail": "yating_chen@hotmail.com", "通訊地址": "台南市中西區中正路50號", "出生年月日": "1995/08/07", "性別": "女", "消費金額": 61000 },
+                { "姓名": "黃建國", "電話": "0956-789012", "身分證字號": "E156789015", "mail": "kuo_huang@tech.org", "通訊地址": "新北市板橋區文化路一段120號", "出生年月日": "1980/12/30", "性別": "男", "消費金額": 75000 },
+                { "姓名": "林淑芬", "電話": "0967-890123", "身分證字號": "F267890124", "mail": "shufen@gmail.com", "通訊地址": "桃園市桃園區中正路150號", "出生年月日": "1988/06/19", "性別": "女", "消費金額": 43000 },
+                { "姓名": "吳冠宇", "電話": "0978-901234", "身分證字號": "G178901233", "mail": "yu_wu@business.com", "通訊地址": "新竹市東區光復路二段101號", "出生年月日": "1993/09/04", "性別": "男", "消費金額": 88000 },
+                { "姓名": "蔡宗翰", "電話": "0989-012345", "身分證字號": "H189012342", "mail": "tsai_zong@mail.net", "通訊地址": "基隆市仁愛區愛三路88號", "出生年月日": "1987/02/28", "性別": "男", "消費金額": 50000 },
+                { "姓名": "劉怡君", "電話": "0990-123456", "身分證字號": "I290123451", "mail": "yichun_liu@gmail.com", "通訊地址": "嘉義市東區中山路200號", "出生年月日": "1991/10/11", "性別": "女", "消費金額": 49000 },
+                { "姓名": "楊家豪", "電話": "0911-234567", "身分證字號": "J101234560", "mail": "jiahau_yang@corp.tw", "通訊地址": "宜蘭縣宜蘭市神農路一段1號", "出生年月日": "1994/04/25", "性別": "男", "消費金額": 67000 }
+            ];
+            initWorkspace();
+        });
+
+        // 檔案上傳監聽
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            currentFileName = file.name;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    // 轉成二維陣列以智慧偵測表頭列 (Header Row Detection)
+                    const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+                    
+                    if (rawRows.length === 0) {
+                        showModal("格式錯誤", "上傳的檔案沒有包含任何資料！");
+                        return;
+                    }
+
+                    // 自動尋找最可能的表頭列（包含「姓名」、「電話」、「身分證」或欄位數最多的那列）
+                    let headerRowIndex = 0;
+                    let maxScore = -1;
+
+                    for (let i = 0; i < Math.min(rawRows.length, 10); i++) {
+                        const row = rawRows[i];
+                        if (!row || row.length === 0) continue;
+                        
+                        let score = 0;
+                        const rowStr = row.join(' ').toLowerCase();
+                        if (rowStr.includes('姓名') || rowStr.includes('name')) score += 5;
+                        if (rowStr.includes('電話') || rowStr.includes('phone') || rowStr.includes('tel')) score += 5;
+                        if (rowStr.includes('身分證') || rowStr.includes('id')) score += 5;
+                        if (rowStr.includes('mail') || rowStr.includes('地址')) score += 3;
+                        
+                        // 計算非空欄位數量
+                        const filledCount = row.filter(cell => String(cell).trim() !== '').length;
+                        score += filledCount;
+
+                        if (score > maxScore) {
+                            maxScore = score;
+                            headerRowIndex = i;
+                        }
+                    }
+
+                    // 提取表頭
+                    const headerCells = rawRows[headerRowIndex].map(cell => String(cell).trim());
+                    const validColumns = headerCells.filter(col => col !== '' && !col.startsWith('__EMPTY'));
+
+                    if (validColumns.length === 0) {
+                        showModal("格式錯誤", "無法在檔案中識別出有效的欄位標題，請確認檔案格式！");
+                        return;
+                    }
+
+                    // 組合資料列 (從表頭下一列開始)
+                    rawData = [];
+                    for (let i = headerRowIndex + 1; i < rawRows.length; i++) {
+                        const row = rawRows[i];
+                        // 略過完全空白的列
+                        if (!row || row.every(cell => String(cell).trim() === '')) continue;
+
+                        const rowObj = {};
+                        let hasData = false;
+                        headerCells.forEach((colName, colIdx) => {
+                            if (colName && !colName.startsWith('__EMPTY')) {
+                                const val = row[colIdx] !== undefined ? row[colIdx] : "";
+                                rowObj[colName] = val;
+                                if (String(val).trim() !== '') hasData = true;
+                            }
+                        });
+                        if (hasData) {
+                            rawData.push(rowObj);
+                        }
+                    }
+
+                    if (rawData.length === 0) {
+                        showModal("格式錯誤", "偵測到表頭但找不到對應的資料列！");
+                        return;
+                    }
+
+                    initWorkspace();
+                } catch (err) {
+                    showModal("解析失敗", "無法解析該檔案格式，請確認是否為正確的 Excel 或 CSV 檔案。");
+                    console.error(err);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        // 初始化工作區與自動欄位辨識
+        function initWorkspace() {
+            if (rawData.length === 0) return;
+            columns = Object.keys(rawData[0]);
+            
+            columnConfigs = {};
+            columns.forEach(col => {
+                const lowerCol = col.toLowerCase();
+                let defaultRule = 'none';
+                let defaultAdv = { start: 1, length: 4, tail: 1, char: '*' };
+                
+                if (lowerCol.includes('姓') || lowerCol.includes('名') || lowerCol.includes('name')) {
+                    defaultRule = 'mask_name';
+                    defaultAdv = { start: 1, length: 1, tail: 1, char: '○' };
+                } else if (lowerCol.includes('電話') || lowerCol.includes('手機') || lowerCol.includes('phone') || lowerCol.includes('tel')) {
+                    defaultRule = 'mask_phone';
+                    defaultAdv = { start: 4, length: 4, tail: 2, char: '*' };
+                } else if (lowerCol.includes('身分證') || lowerCol.includes('id') || lowerCol.includes('pid')) {
+                    defaultRule = 'mask_id';
+                    defaultAdv = { start: 2, length: 5, tail: 3, char: '*' };
+                } else if (lowerCol.includes('mail') || lowerCol.includes('信箱')) {
+                    defaultRule = 'mask_email';
+                    defaultAdv = { start: 2, length: 3, tail: 0, char: '*' };
+                } else if (lowerCol.includes('地址') || lowerCol.includes('address')) {
+                    defaultRule = 'mask_custom';
+                    defaultAdv = { start: 7, length: 8, tail: 4, char: '*' }; // 遮罩地址中間區段
+                } else if (lowerCol.includes('出生') || lowerCol.includes('date') || lowerCol.includes('birthday')) {
+                    defaultRule = 'mask_custom';
+                    defaultAdv = { start: 6, length: 5, tail: 0, char: '*' }; // 遮罩月日
+                } else if (lowerCol.includes('金額') || lowerCol.includes('price') || lowerCol.includes('salary')) {
+                    defaultRule = 'generalize_range';
+                }
+                
+                columnConfigs[col] = {
+                    rule: defaultRule,
+                    adv: defaultAdv
+                };
+            });
+
+            fileNameDisplay.innerText = currentFileName;
+            fileMetaDisplay.innerText = `共 ${rawData.length} 列資料，${columns.length} 個欄位`;
+
+            renderConfigCards();
+            applyMasking();
+
+            uploadSection.classList.add('hidden');
+            workspaceSection.classList.remove('hidden');
+        }
+
+        // 渲染欄位設定卡片
+        function renderConfigCards() {
+            columnsConfigContainer.innerHTML = '';
+            columns.forEach(col => {
+                const config = columnConfigs[col];
+                const card = document.createElement('div');
+                card.className = "bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3";
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="font-semibold text-slate-700 text-sm truncate" title="${col}">${col}</span>
+                        <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded ${config.rule === 'none' ? 'bg-slate-200 text-slate-600' : 'bg-indigo-100 text-indigo-700'}">
+                            ${getRuleName(config.rule)}
+                        </span>
+                    </div>
+                    <select data-column="${col}" class="rule-select w-full text-xs bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="none" ${config.rule === 'none' ? 'selected' : ''}>不處理 (維持原樣)</option>
+                        <option value="mask_custom" ${config.rule === 'mask_custom' ? 'selected' : ''}>自訂遮罩 (依進階參數)</option>
+                        <option value="mask_name" ${config.rule === 'mask_name' ? 'selected' : ''}>姓名遮罩 (保留姓氏，中名改O)</option>
+                        <option value="mask_phone" ${config.rule === 'mask_phone' ? 'selected' : ''}>電話遮罩 (隱藏中間四碼)</option>
+                        <option value="mask_id" ${config.rule === 'mask_id' ? 'selected' : ''}>身分證遮罩 (隱藏中間五碼)</option>
+                        <option value="mask_email" ${config.rule === 'mask_email' ? 'selected' : ''}>Email 遮罩</option>
+                        <option value="generalize_range" ${config.rule === 'generalize_range' ? 'selected' : ''}>數值泛化 (級距分箱)</option>
+                        <option value="hash" ${config.rule === 'hash' ? 'selected' : ''}>雜湊編碼 (SHA-256 模擬)</option>
+                        <option value="anonymize" ${config.rule === 'anonymize' ? 'selected' : ''}>完全隱藏</option>
+                    </select>
+                    <div class="flex justify-between items-center pt-1">
+                        <span class="text-[11px] text-slate-400 font-mono">參數: 起點${config.adv.start}/長${config.adv.length}/${config.adv.char}</span>
+                        <button data-column="${col}" class="open-adv-btn text-indigo-600 hover:text-indigo-800 text-xs font-medium flex items-center gap-1">
+                            <i class="fa-solid fa-sliders"></i> 進階設定
+                        </button>
+                    </div>
+                `;
+                columnsConfigContainer.appendChild(card);
+            });
+
+            // 綁定選單事件
+            document.querySelectorAll('.rule-select').forEach(select => {
+                select.addEventListener('change', (e) => {
+                    const colName = e.target.getAttribute('data-column');
+                    columnConfigs[colName].rule = e.target.value;
+                });
+            });
+
+            // 綁定進階按鈕事件
+            document.querySelectorAll('.open-adv-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const colName = e.currentTarget.getAttribute('data-column');
+                    openAdvancedModal(colName);
+                });
+            });
+        }
+
+        function getRuleName(rule) {
+            const map = {
+                'none': '未處理',
+                'mask_custom': '自訂遮罩',
+                'mask_name': '姓名遮罩',
+                'mask_phone': '電話遮罩',
+                'mask_id': '身分證遮罩',
+                'mask_email': 'Email遮罩',
+                'generalize_range': '數值泛化',
+                'hash': '雜湊編碼',
+                'anonymize': '完全隱藏'
+            };
+            return map[rule] || '自訂';
+        }
+
+        // 開啟進階參數 Modal
+        function openAdvancedModal(colName) {
+            activeAdvancedCol = colName;
+            const config = columnConfigs[colName];
+            advancedModalTitle.innerText = `進階參數設定 - ${colName}`;
+            advStart.value = config.adv.start;
+            advLength.value = config.adv.length;
+            advTail.value = config.adv.tail;
+            advChar.value = config.adv.char;
+            advancedModal.classList.remove('hidden');
+        }
+
+        function closeAdvancedModal() {
+            advancedModal.classList.add('hidden');
+            activeAdvancedCol = null;
+        }
+
+        advancedCloseX.addEventListener('click', closeAdvancedModal);
+        advancedCancelBtn.addEventListener('click', closeAdvancedModal);
+
+        advancedSaveBtn.addEventListener('click', () => {
+            if (!activeAdvancedCol) return;
+            columnConfigs[activeAdvancedCol].adv = {
+                start: parseInt(advStart.value) || 1,
+                length: parseInt(advLength.value) || 4,
+                tail: parseInt(advTail.value) || 0,
+                char: advChar.value || '*'
+            };
+            // 自動切換為自訂遮罩或保持現狀
+            if (columnConfigs[activeAdvancedCol].rule === 'none') {
+                columnConfigs[activeAdvancedCol].rule = 'mask_custom';
+            }
+            closeAdvancedModal();
+            renderConfigCards();
+            applyMasking();
+            showModal("參數已更新", `欄位「${activeAdvancedCol}」的進階遮罩參數已成功儲存並重新計算。`);
+        });
+
+        // 核心個資遮罩與泛化演算法
+        function applyMaskingRule(val, config) {
+            if (val === null || val === undefined || val === '') return '';
+            const strVal = String(val).trim();
+            const rule = config.rule;
+            const adv = config.adv;
+
+            switch (rule) {
+                case 'mask_custom':
+                case 'mask_name':
+                case 'mask_phone':
+                case 'mask_id':
+                case 'mask_email': {
+                    // 通用高度自訂遮罩引擎 (依據 adv 參數)
+                    const startIdx = Math.max(0, adv.start - 1);
+                    const tailCount = adv.tail;
+                    const char = adv.char || '*';
+
+                    if (strVal.length <= startIdx) return strVal;
+                    
+                    const prefix = strVal.substring(0, startIdx);
+                    const remaining = strVal.substring(startIdx);
+                    
+                    if (remaining.length <= tailCount) {
+                        return prefix + char.repeat(remaining.length);
+                    }
+
+                    const maskLen = Math.min(adv.length, remaining.length - tailCount);
+                    const maskedPart = char.repeat(maskLen);
+                    const tailPart = remaining.substring(remaining.length - tailCount);
+                    
+                    // 中間若還有未被遮罩也未被歸入 tail 的部分，保留或補遮罩
+                    const middleLen = remaining.length - maskLen - tailCount;
+                    const middlePart = middleLen > 0 ? remaining.substring(maskLen, maskLen + middleLen) : '';
+
+                    return prefix + maskedPart + middlePart + tailPart;
+                }
+
+                case 'generalize_range': {
+                    const num = Number(strVal);
+                    if (isNaN(num)) return strVal;
+                    if (num < 30000) return '3萬以下';
+                    if (num < 50000) return '3萬 - 5萬';
+                    if (num < 80000) return '5萬 - 8萬';
+                    return '8萬以上';
+                }
+
+                case 'hash': {
+                    let hash = 0;
+                    for (let i = 0; i < strVal.length; i++) {
+                        hash = ((hash << 5) - hash) + strVal.charCodeAt(i);
+                        hash |= 0;
+                    }
+                    return 'HASH_' + Math.abs(hash).toString(16).toUpperCase();
+                }
+
+                case 'anonymize':
+                    return '[已隱藏]';
+
+                default:
+                    return strVal;
+            }
+        }
+
+        // 執行匿名化處理並更新預覽
+        function applyMasking() {
+            processedData = rawData.map(row => {
+                const newRow = {};
+                columns.forEach(col => {
+                    const config = columnConfigs[col] || { rule: 'none', adv: { start: 1, length: 4, tail: 0, char: '*' } };
+                    newRow[col] = applyMaskingRule(row[col], config);
+                });
+                return newRow;
+            });
+
+            renderPreviewTable();
+        }
+
+        applyMaskBtn.addEventListener('click', () => {
+            applyMasking();
+            showModal("套用成功", "已成功根據目前自訂與進階參數完成個資遮罩與泛化處理！");
+        });
+
+        // 渲染預覽表格
+        function renderPreviewTable() {
+            const thead = document.getElementById('preview-thead');
+            const tbody = document.getElementById('preview-tbody');
+
+            let headerHtml = `<tr class="border-b border-slate-200">`;
+            headerHtml += `<th class="px-4 py-3 font-semibold text-slate-600">#</th>`;
+            columns.forEach(col => {
+                headerHtml += `<th class="px-4 py-3 font-semibold text-slate-600">${col}</th>`;
+            });
+            headerHtml += `</tr>`;
+            thead.innerHTML = headerHtml;
+
+            let bodyHtml = '';
+            const displayRows = processedData.slice(0, 20);
+            
+            displayRows.forEach((row, idx) => {
+                bodyHtml += `<tr class="hover:bg-slate-50 transition border-b border-slate-100 last:border-none">`;
+                bodyHtml += `<td class="px-4 py-3 text-slate-400 font-mono text-xs">${idx + 1}</td>`;
+                columns.forEach(col => {
+                    bodyHtml += `<td class="px-4 py-3 font-mono text-xs">${row[col] !== undefined ? row[col] : ''}</td>`;
+                });
+                bodyHtml += `</tr>`;
+            });
+
+            if (displayRows.length === 0) {
+                bodyHtml = `<tr><td colspan="${columns.length + 1}" class="text-center py-8 text-slate-400">沒有資料</td></tr>`;
+            }
+
+            tbody.innerHTML = bodyHtml;
+        }
+
+        // 匯出檔案
+        exportBtn.addEventListener('click', () => {
+            if (processedData.length === 0) return;
+
+            const worksheet = XLSX.utils.json_to_sheet(processedData);
+            const workbook = XLSX.Workbook ? new XLSX.Workbook() : XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "匿名化資料");
+
+            const ext = currentFileName.split('.').pop().toLowerCase();
+            if (ext === 'csv') {
+                XLSX.writeFile(workbook, "masked_" + currentFileName, { bookType: 'csv' });
+            } else {
+                XLSX.writeFile(workbook, "masked_" + currentFileName);
+            }
+        });
+
+        // 重新上傳按鈕
+        resetBtn.addEventListener('click', () => {
+            rawData = [];
+            processedData = [];
+            fileInput.value = '';
+            workspaceSection.classList.add('hidden');
+            uploadSection.classList.remove('hidden');
+        });
+    </script>
+
+</body>
+</html>
