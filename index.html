@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIS 系統工程與資料庫管理專家 | 個人專業作品集</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Inter & Noto Sans TC -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#fcfaf5',
+                            100: '#f7f1e3',
+                            200: '#ede2c0', // Palette color #EDE2C0
+                            300: '#c2c9ed', // Palette color #C2C9ED
+                            400: '#c0edc9', // Palette color #C0EDC9
+                            500: '#edbbc2', // Palette color #EDBBC2
+                            600: '#988B64', // Palette color #988B64
+                            700: '#7a6e4e',
+                            800: '#5c523a',
+                            900: '#4F423A', // Requested base background #4F423A
+                        },
+                        custom: {
+                            sand: '#EDE2C0',
+                            pink: '#EDBBC2',
+                            blue: '#C2C9ED',
+                            green: '#C0EDC9',
+                            gold: '#988B64',
+                            dark: '#4F423A'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .hero-gradient {
+            background: radial-gradient(circle at top right, rgba(237, 187, 194, 0.12), transparent 50%),
+                        radial-gradient(circle at bottom left, rgba(194, 201, 237, 0.08), transparent 50%);
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 0.3; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .animate-pulse-ring {
+            animation: pulse-ring 2.5s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-[#4F423A] text-slate-100 font-sans antialiased selection:bg-[#edbbc2] selection:text-[#4F423A]">
+
+    <audio id="bg-audio" preload="auto">
+        <source src="https://img.ai365.fans/artworks/6ee26e81-8b48-4c9e-8a9d-a9c355670121/msbcd0kchvf.mp3" type="audio/mpeg">
+        您的瀏覽器不支援音樂播放元素。
+    </audio>
+
+    <div class="fixed bottom-6 right-6 z-50 flex items-center">
+        <div id="audio-tooltip" class="hidden sm:block mr-3 px-3 py-1.5 bg-[#5c523a]/90 text-[#EDE2C0] text-xs rounded-xl border border-[#988B64]/40 shadow-xl backdrop-blur-md transition-all opacity-90">
+            點擊播放背景音樂 🎵
+        </div>
+        <button id="audio-toggle-btn" class="relative group w-12 h-12 rounded-2xl bg-[#988B64] hover:bg-[#7a6e4e] text-white flex items-center justify-center shadow-xl shadow-[#988B64]/30 transition-all transform hover:scale-105 focus:outline-none cursor-pointer">
+            <!-- Ripple Effect Background when playing -->
+            <div id="audio-ring" class="absolute inset-0 rounded-2xl bg-[#EDE2C0] opacity-0 pointer-events-none"></div>
+            <!-- Icon -->
+            <i id="audio-icon" class="fa-solid fa-music text-lg transition-transform"></i>
+        </button>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-[#4F423A]/90 backdrop-blur-md border-b border-[#5c523a]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#988B64] to-[#EDBBC2] flex items-center justify-center text-[#4F423A] font-bold text-lg shadow-lg">
+                    M
+                </div>
+                <span class="font-bold text-lg tracking-tight text-[#EDE2C0]">MIS & Data Portfolio</span>
+            </div>
+            <!-- Desktop Links -->
+            <div class="hidden md:flex items-center space-x-8 text-sm font-medium text-[#EDE2C0]/80">
+                <a href="#about" class="hover:text-[#EDE2C0] transition-colors">關於我</a>
+                <a href="#skills" class="hover:text-[#EDE2C0] transition-colors">專業技能</a>
+                <a href="#experience" class="hover:text-[#EDE2C0] transition-colors">專案經驗</a>
+                <a href="#vision" class="hover:text-[#EDE2C0] transition-colors">未來展望</a>
+                <a href="#contact" class="px-4 py-2 rounded-xl bg-[#988B64] text-white hover:bg-[#7a6e4e] transition shadow-md">與我聯繫</a>
+            </div>
+            <!-- Mobile Menu Button -->
+            <div class="md:hidden flex items-center">
+                <button id="menu-btn" class="text-[#EDE2C0] hover:text-white focus:outline-none p-2">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+        <!-- Mobile Dropdown Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-[#4F423A]/95 border-b border-[#5c523a] px-4 pt-2 pb-4 space-y-3">
+            <a href="#about" class="block py-2 text-[#EDE2C0] hover:text-white">關於我</a>
+            <a href="#skills" class="block py-2 text-[#EDE2C0] hover:text-white">專業技能</a>
+            <a href="#experience" class="block py-2 text-[#EDE2C0] hover:text-white">專案經驗</a>
+            <a href="#vision" class="block py-2 text-[#EDE2C0] hover:text-white">未來展望</a>
+            <a href="#contact" class="block text-center py-2.5 rounded-xl bg-[#988B64] text-white font-medium">與我聯繫</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="relative pt-32 pb-20 md:pt-44 md:pb-32 hero-gradient overflow-hidden border-b border-[#5c523a]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                <div class="lg:col-span-7">
+                    <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-[#EDBBC2]/10 border border-[#EDBBC2]/30 text-[#EDBBC2] text-xs font-semibold mb-6">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <span>9 年 MIS 系統工程與資料庫管理經驗</span>
+                    </div>
+                    <h1 class="text-4xl sm:text-6xl font-extrabold text-[#EDE2C0] tracking-tight leading-tight mb-6">
+                        結合系統工程與資料思維，<br>
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#EDBBC2] to-[#C2C9ED]">驅動企業流程高效運轉</span>
+                    </h1>
+                    <p class="text-lg sm:text-xl text-[#EDE2C0]/80 mb-10 leading-relaxed">
+                        橫跨科技與系統產業，專精企業簽核流程開發、複雜資料庫整合與跨領域數位轉型，現正積極結合 AI 應用與數據驅動思維，邁向組織管理顧問新境界。
+                    </p>
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
+                        <a href="#experience" class="inline-flex justify-center items-center px-8 py-4 rounded-xl bg-[#988B64] text-white font-semibold hover:bg-[#7a6e4e] transition shadow-lg shadow-[#988B64]/20">
+                            查看專案成就 <i class="fa-solid fa-arrow-right ml-2"></i>
+                        </a>
+                        <a href="#contact" class="inline-flex justify-center items-center px-8 py-4 rounded-xl bg-[#5c523a] hover:bg-[#7a6e4e] text-[#EDE2C0] font-semibold border border-[#988B64]/40 transition">
+                            取得聯絡方式
+                        </a>
+                    </div>
+                </div>
+                <div class="lg:col-span-5 flex justify-center">
+                    <div class="relative w-full max-w-md">
+                        <!-- Decorative glow behind image -->
+                        <div class="absolute -inset-1 rounded-3xl bg-gradient-to-r from-[#EDBBC2] to-[#C2C9ED] opacity-20 blur-xl"></div>
+                        <div class="relative rounded-2xl overflow-hidden border border-[#988B64]/40 bg-[#5c523a]/60 shadow-2xl p-2">
+                            <img src="https://img.ai365.fans/cdn-cgi/image/width=1400,quality=90,format=auto/artworks/6ee26e81-8b48-4c9e-8a9d-a9c355670121/2ntk4zfuzso.png" 
+                                 alt="MIS & Data Professional Illustration" 
+                                 class="w-full h-auto object-cover rounded-xl transform hover:scale-105 transition duration-500"
+                                 onerror="this.src='https://placehold.co/600x600/5c523a/EDE2C0?text=MIS+Expert';">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- About Section -->
+    <section id="about" class="py-20 border-b border-[#5c523a]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <h2 class="text-3xl font-bold text-[#EDE2C0] mb-4">專業背景概述</h2>
+                <div class="w-16 h-1 bg-[#988B64] mx-auto rounded-full"></div>
+                <p class="text-[#EDE2C0]/70 mt-4">深耕資訊領域近十年，具備紮實的底層架構與高靈活性之跨部門溝通整合能力。</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="p-8 rounded-2xl bg-[#5c523a]/40 border border-[#5c523a] hover:border-[#988B64] transition group">
+                    <div class="w-14 h-14 rounded-xl bg-[#EDBBC2]/10 border border-[#EDBBC2]/30 text-[#EDBBC2] flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-laptop-code"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-[#EDE2C0] mb-3">系統工程與開發</h3>
+                    <p class="text-[#EDE2C0]/70 leading-relaxed">
+                        擁有 Java、JSP、JavaScript 開發背景，專精鼎新/Tiptop ERP、PowerPress、eMaker 等企業簽核流程開發。
+                    </p>
+                </div>
+
+                <div class="p-8 rounded-2xl bg-[#5c523a]/40 border border-[#5c523a] hover:border-[#988B64] transition group">
+                    <div class="w-14 h-14 rounded-xl bg-[#C2C9ED]/10 border border-[#C2C9ED]/30 text-[#C2C9ED] flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-database"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-[#EDE2C0] mb-3">資料庫與架構管理</h3>
+                    <p class="text-[#EDE2C0]/70 leading-relaxed">
+                        精通 Oracle、PostgreSQL、SQL Server 與 Access 等多種資料庫，具備強大的數據整合與效能調校經驗。
+                    </p>
+                </div>
+
+                <div class="p-8 rounded-2xl bg-[#5c523a]/40 border border-[#5c523a] hover:border-[#988B64] transition group">
+                    <div class="w-14 h-14 rounded-xl bg-[#C0EDC9]/10 border border-[#C0EDC9]/30 text-[#C0EDC9] flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-brain"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-[#EDE2C0] mb-3">AI 應用與數據思維</h3>
+                    <p class="text-[#EDE2C0]/70 leading-relaxed">
+                        現正積極精進 AI 應用技術，結合系統與資料背景，期望以數據驅動思維協助企業優化核心流程與決策。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Skills Section -->
+    <section id="skills" class="py-20 bg-[#443831] border-b border-[#5c523a]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <h2 class="text-3xl font-bold text-[#EDE2C0] mb-4">核心技術棧</h2>
+                <div class="w-16 h-1 bg-[#988B64] mx-auto rounded-full"></div>
+                <p class="text-[#EDE2C0]/70 mt-4">多年累積的企業級系統工具與開發技術清單。</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Skill Group 1 -->
+                <div class="bg-[#5c523a]/40 border border-[#5c523a] p-6 rounded-2xl">
+                    <div class="text-[#EDBBC2] font-semibold mb-4 flex items-center">
+                        <i class="fa-solid fa-network-wired mr-2"></i> 企業簽核與表單
+                    </div>
+                    <ul class="space-y-3 text-sm text-[#EDE2C0]/80">
+                        <li class="flex items-center"><i class="fa-solid fa-check text-[#C0EDC9] mr-2 text-xs"></i> 鼎新 / Tiptop ERP</li>
+                        <li class="flex items-center"><i class="fa-solid fa-check text-[#C0EDC9] mr-2 text-xs"></i> PowerPress 流程系統</li>
+                        <li class="flex items-center"><i class="fa-solid fa-check text-[#C0EDC9] mr-2 text-xs"></i> eMaker 表單開發</li>
+                        <li class="flex items-center"><i class="fa-solid fa-check text-[#C0EDC9] mr-2 text-xs"></i> 企業客製表單與簽核邏輯</li>
+                    </ul>
+                </div>
+
+                <!-- Skill Group 2 -->
+                <div class="bg-[#5c523a]/40 border border-[#5c523a] p-6 rounded-2xl">
+                    <div class="text-[#C2C9ED] font-semibold mb-4 flex items-center">
+                        <i class="fa-solid fa-server mr-2"></i> 資料庫管理
+                    </div>
+                    <ul class="space-y-3 text-sm text-[#EDE2C0]/80">
+                        <li class="flex items-center"><i class="fa-solid fa-check text-[#C0EDC9] mr-2 text-xs"></i> Oracle Database</li>
+                        <li class="flex items-center"><i class="fa-solid fa-check text-[#C0EDC9] mr-2 text-xs"></i> PostgreSQL</li>
+                        <li class="flex items-center"><i class="fa-solid fa-check text-[#C0EDC9] mr-2 text-xs"></i> Microsoft SQL Server</li>
+                        <li class="flex items-center"><i class="fa-solid fa-check text-[#C0EDC9] mr-2 text-xs"></i> Microsoft Access</li>
+                    </ul>
+                </div>
+
+                <!-- Skill Group 3 -->
+                <div class="bg-[#5c523a]/40 border border-[#5c523a] p-6 rounded-2xl">
+                    <div class="text-[#EDE2C0] font-semibold mb-4 flex items-center">
+                        <i class="fa-solid fa-code mr-2"></i> 程式開發語言
+                    </div>
+                    <ul class="space-y-3 text-sm text-[#EDE2C0]/80">
+                        <li class="flex items-center"><i class="fa-solid fa-check text-[#C0EDC9] mr-2 text-xs"></i> Java 程式開發</li>
+                        <li class="flex items-center"><i class="fa-solid fa-check text-[#C0EDC9] mr-2 text-xs"></i> JSP 網頁技術</li>
+                        <li class="flex items-center"><i class="fa-solid fa-check text-[#C0EDC9] mr-2 text-xs"></i> JavaScript</li>
+                        <li class="flex items-center"><i class="fa-solid fa-check text-[#C0EDC9] mr-2 text-xs"></i> Web 前端與後端整合</li>
+                    </ul>
+                </div>
+
+                <!-- Skill Group 4 -->
+                <div class="bg-[#5c523a]/40 border border-[#5c523a] p-6 rounded-2xl">
+                    <div class="text-[#C0EDC9] font-semibold mb-4 flex items-center">
+                        <i class="fa-solid fa-rocket mr-2"></i> 趨勢與前瞻技術
+                    </div>
+                    <ul class="space-y-3 text-sm text-[#EDE2C0]/80">
+                        <li class="flex items-center"><i class="fa-solid fa-check text-[#C0EDC9] mr-2 text-xs"></i> AI 應用與實踐</li>
+                        <li class="flex items-center"><i class="fa-solid fa-check text-[#C0EDC9] mr-2 text-xs"></i> 數據驅動決策 (Data-Driven)</li>
+                        <li class="flex items-center"><i class="fa-solid fa-check text-[#C0EDC9] mr-2 text-xs"></i> 企業流程數位化優化</li>
+                        <li class="flex items-center"><i class="fa-solid fa-check text-[#C0EDC9] mr-2 text-xs"></i> 跨部門系統整合規劃</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Experience & Projects Section -->
+    <section id="experience" class="py-20 border-b border-[#5c523a]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <h2 class="text-3xl font-bold text-[#EDE2C0] mb-4">專案成就與核心實績</h2>
+                <div class="w-16 h-1 bg-[#988B64] mx-auto rounded-full"></div>
+                <p class="text-[#EDE2C0]/70 mt-4">主導多項企業級數位轉型與關鍵簽核流程，展現出色的跨領域整合能力。</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Project 1 -->
+                <div class="bg-[#5c523a]/40 border border-[#5c523a] p-8 rounded-2xl flex flex-col justify-between hover:border-[#988B64] transition">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="px-3 py-1 bg-[#EDBBC2]/15 text-[#EDBBC2] text-xs font-semibold rounded-full border border-[#EDBBC2]/30">人資數位轉型</span>
+                            <span class="text-[#EDE2C0]/60 text-sm"><i class="fa-solid fa-star text-[#EDE2C0] mr-1"></i> 成本優化實績</span>
+                        </div>
+                        <h3 class="text-2xl font-bold text-[#EDE2C0] mb-3">HR 請假流程數位化</h3>
+                        <p class="text-[#EDE2C0]/80 leading-relaxed mb-6">
+                            成功克服法規頻繁異動與多元班別的複雜規則挑戰，將繁複的人工請假及審核全面數位化。不僅大幅提升人資行政效率，更替企業成功省下可觀的外部顧問費用支出。
+                        </p>
+                    </div>
+                    <div class="border-t border-[#5c523a] pt-4 flex items-center justify-between text-sm text-[#EDE2C0]/70">
+                        <span><i class="fa-solid fa-clock-rotate-left mr-1"></i> 複雜規則梳理</span>
+                        <span class="text-[#EDBBC2] font-medium">顧問費用節省</span>
+                    </div>
+                </div>
+
+                <!-- Project 2 -->
+                <div class="bg-[#5c523a]/40 border border-[#5c523a] p-8 rounded-2xl flex flex-col justify-between hover:border-[#988B64] transition">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="px-3 py-1 bg-[#C2C9ED]/15 text-[#C2C9ED] text-xs font-semibold rounded-full border border-[#C2C9ED]/30">跨部門系統整合</span>
+                            <span class="text-[#EDE2C0]/60 text-sm"><i class="fa-solid fa-network-wired text-[#C2C9ED] mr-1"></i> 流程判斷力</span>
+                        </div>
+                        <h3 class="text-2xl font-bold text-[#EDE2C0] mb-3">PCN 工程變更通知流程開發</h3>
+                        <p class="text-[#EDE2C0]/80 leading-relaxed mb-6">
+                            負責關鍵的 PCN（Product Change Notification）工程變更通知流程開發。在高度動態且牽涉多部門協作的系統整合專案中，展現出色的流程判斷力與風險管控能力。
+                        </p>
+                    </div>
+                    <div class="border-t border-[#5c523a] pt-4 flex items-center justify-between text-sm text-[#EDE2C0]/70">
+                        <span><i class="fa-solid fa-sitemap mr-1"></i> 跨部門協同</span>
+                        <span class="text-[#C2C9ED] font-medium">高效率流程落地</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- More Projects Bar -->
+            <div class="mt-8 bg-[#5c523a]/25 border border-[#5c523a] p-8 rounded-2xl">
+                <h4 class="text-lg font-bold text-[#EDE2C0] mb-4"><i class="fa-solid fa-list-check text-[#C0EDC9] mr-2"></i> 其他涵蓋專案領域</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="p-4 rounded-xl bg-[#443831]/60 border border-[#5c523a] text-center text-[#EDE2C0]/90 font-medium text-sm">
+                        <i class="fa-solid fa-id-card-clip text-[#EDBBC2] block mb-2 text-lg"></i> 門禁系統整合
+                    </div>
+                    <div class="p-4 rounded-xl bg-[#443831]/60 border border-[#5c523a] text-center text-[#EDE2C0]/90 font-medium text-sm">
+                        <i class="fa-solid fa-users-rectangle text-[#C2C9ED] block mb-2 text-lg"></i> 組織架構同步
+                    </div>
+                    <div class="p-4 rounded-xl bg-[#443831]/60 border border-[#5c523a] text-center text-[#EDE2C0]/90 font-medium text-sm">
+                        <i class="fa-solid fa-calculator text-[#C0EDC9] block mb-2 text-lg"></i> 會計流程數位化
+                    </div>
+                    <div class="p-4 rounded-xl bg-[#443831]/60 border border-[#5c523a] text-center text-[#EDE2C0]/90 font-medium text-sm">
+                        <i class="fa-solid fa-file-lines text-[#EDE2C0] block mb-2 text-lg"></i> 各類 MIS 表單開發
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Future Vision Section -->
+    <section id="vision" class="py-20 bg-[#443831] border-b border-[#5c523a]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-[#C0EDC9]/10 border border-[#C0EDC9]/30 text-[#C0EDC9] text-xs font-semibold mb-6">
+                        <i class="fa-solid fa-compass"></i>
+                        <span>職涯新藍圖</span>
+                    </div>
+                    <h2 class="text-3xl font-bold text-[#EDE2C0] mb-6">朝組織管理顧問方向邁進</h2>
+                    <p class="text-[#EDE2C0]/80 leading-relaxed mb-6">
+                        憑藉 9 年來在科技與系統產業累積的實戰深度，我深刻理解企業在運作上常面臨的系統孤島與流程痛點。
+                    </p>
+                    <p class="text-[#EDE2C0]/80 leading-relaxed mb-8">
+                        未來，我期望將紮實的 <strong class="text-white">系統架構</strong> 與 <strong class="text-white">資料背景</strong>，結合當前最具前瞻性的 <strong class="text-[#C0EDC9]">AI 應用與數據驅動思維</strong>，轉型成為能為企業把脈、優化內部流程與協助高階決策的專業組織管理顧問。
+                    </p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="p-4 rounded-xl bg-[#5c523a]/40 border border-[#5c523a]">
+                            <span class="text-2xl font-bold text-[#EDE2C0] block mb-1">9年+</span>
+                            <span class="text-[#EDE2C0]/70 text-sm">系統與資料實戰歷練</span>
+                        </div>
+                        <div class="p-4 rounded-xl bg-[#5c523a]/40 border border-[#5c523a]">
+                            <span class="text-2xl font-bold text-[#C0EDC9] block mb-1">AI + 數據</span>
+                            <span class="text-[#EDE2C0]/70 text-sm">新一代企業決策思維</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative">
+                    <div class="w-full h-80 sm:h-96 rounded-2xl bg-gradient-to-tr from-[#5c523a]/40 to-[#988B64]/20 border border-[#5c523a] p-8 flex flex-col justify-center relative overflow-hidden">
+                        <div class="absolute -right-10 -bottom-10 text-[#5c523a]/20 pointer-events-none">
+                            <i class="fa-solid fa-chart-line text-[180px]"></i>
+                        </div>
+                        <div class="relative z-10 space-y-6">
+                            <div class="flex items-start space-x-4">
+                                <div class="w-10 h-10 rounded-lg bg-[#EDBBC2]/20 text-[#EDBBC2] flex items-center justify-center shrink-0 mt-1">
+                                    <i class="fa-solid fa-bullseye"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-[#EDE2C0] font-bold mb-1">精準流程診斷</h4>
+                                    <p class="text-[#EDE2C0]/70 text-sm">透過豐富的 ERP 與簽核表單開發實務，快速揪出企業行政與作業流程瓶頸。</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-4">
+                                <div class="w-10 h-10 rounded-lg bg-[#C2C9ED]/20 text-[#C2C9ED] flex items-center justify-center shrink-0 mt-1">
+                                    <i class="fa-solid fa-database"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-[#EDE2C0] font-bold mb-1">數據導向優化</h4>
+                                    <p class="text-[#EDE2C0]/70 text-sm">運用多元資料庫整合能力，將數據轉化為管理與決策的重要依據。</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-4">
+                                <div class="w-10 h-10 rounded-lg bg-[#C0EDC9]/20 text-[#C0EDC9] flex items-center justify-center shrink-0 mt-1">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-[#EDE2C0] font-bold mb-1">AI 賦能轉型</h4>
+                                    <p class="text-[#EDE2C0]/70 text-sm">導入最新 AI 技術，賦能企業管理效能，創造跨時代的競爭優勢。</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="py-20">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl font-bold text-[#EDE2C0] mb-4">期待與您交流</h2>
+            <div class="w-16 h-1 bg-[#988B64] mx-auto rounded-full mb-6"></div>
+            <p class="text-[#EDE2C0]/70 max-w-xl mx-auto mb-10">
+                無論是系統導入諮詢、企業數位轉型規劃、或組織管理顧問合作，歡迎隨時與我聯繫。
+            </p>
+            <div class="flex flex-wrap justify-center gap-4">
+                <a href="mailto:example@domain.com" class="px-6 py-3.5 rounded-xl bg-[#5c523a] border border-[#988B64]/50 hover:border-[#EDE2C0] text-[#EDE2C0] font-medium flex items-center space-x-3 transition">
+                    <i class="fa-solid fa-envelope text-[#EDBBC2]"></i>
+                    <span>寄送電子郵件</span>
+                </a>
+                <a href="https://linkedin.com" target="_blank" class="px-6 py-3.5 rounded-xl bg-[#5c523a] border border-[#988B64]/50 hover:border-[#EDE2C0] text-[#EDE2C0] font-medium flex items-center space-x-3 transition">
+                    <i class="fa-brands fa-linkedin text-[#C2C9ED]"></i>
+                    <span>LinkedIn 專業檔案</span>
+                </a>
+                <a href="https://github.com" target="_blank" class="px-6 py-3.5 rounded-xl bg-[#5c523a] border border-[#988B64]/50 hover:border-[#EDE2C0] text-[#EDE2C0] font-medium flex items-center space-x-3 transition">
+                    <i class="fa-brands fa-github text-[#C0EDC9]"></i>
+                    <span>GitHub 程式碼專案</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-8 bg-[#3d332d] border-t border-[#5c523a] text-center text-[#EDE2C0]/60 text-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <p>&copy; 2026 MIS & Data Management Professional Portfolio. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        const menuBtn = document.getElementById('menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        menuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // Close mobile menu when clicking menu items
+        const mobileLinks = mobileMenu.querySelectorAll('a');
+        mobileLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+            });
+        });
+
+        // Background Audio Controls with Robust Error Handling
+        const bgAudio = document.getElementById('bg-audio');
+        bgAudio.loop = true;
+        const audioToggleBtn = document.getElementById('audio-toggle-btn');
+        const audioIcon = document.getElementById('audio-icon');
+        const audioRing = document.getElementById('audio-ring');
+        const audioTooltip = document.getElementById('audio-tooltip');
+
+        let isPlaying = false;
+
+        audioToggleBtn.addEventListener('click', () => {
+            if (isPlaying) {
+                bgAudio.pause();
+                isPlaying = false;
+                audioIcon.className = "fa-solid fa-music text-lg transition-transform";
+                audioRing.classList.remove('animate-pulse-ring');
+                audioTooltip.textContent = "音樂已暫停";
+            } else {
+                audioTooltip.textContent = "載入音樂中...";
+                bgAudio.play().then(() => {
+                    isPlaying = true;
+                    audioIcon.className = "fa-solid fa-volume-high text-lg animate-bounce transition-transform";
+                    audioRing.classList.add('animate-pulse-ring');
+                    audioTooltip.textContent = "背景音樂播放中 🎶";
+                }).catch(err => {
+                    console.log("Audio playback prevented or failed:", err);
+                    audioTooltip.textContent = "播放失敗，請確認瀏覽器支援格式";
+                    // Reset state
+                    isPlaying = false;
+                });
+            }
+        });
+    </script>
+</body>
+</html>
